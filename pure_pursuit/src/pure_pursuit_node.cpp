@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
-#include "ackermann_msgs/msg/ackermann_drive_stamped.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 
@@ -15,7 +15,7 @@
 using namespace std;
 
 const string &pose_topic = "/pf/viz/inferred_pose";
-const string &drive_topic = "/drive";
+const string &drive_topic = "/cmd_vel";
 const string &waypoint_viz_topic = "/waypoint_markers";
 
 class PurePursuit : public rclcpp::Node {
@@ -25,7 +25,7 @@ public:
     PurePursuit() : Node("pure_pursuit_node")
     {
         pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(pose_topic, 5, std::bind(&PurePursuit::pose_callback, this, std::placeholders::_1));
-        drive_pub_ = this->create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(drive_topic, 1);
+        drive_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(drive_topic, 1);
         waypoint_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(waypoint_viz_topic, queue_size);
 
         this->declare_parameter("lookahead_distance");
@@ -43,7 +43,7 @@ public:
 	tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
 	tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-	f110::CSVReader reader("/sim_ws/src/pure_pursuit/sensor_data/waypoint.csv");
+	f110::CSVReader reader("/home/min/colcon_ws/src/pure_pursuit/sensor_data/waypoint.csv");
         RCLCPP_INFO(this->get_logger(), "%d", n_way_points_);
 	way_point_data_ = reader.getData(n_way_points_);
         RCLCPP_INFO(this->get_logger(), "Pure Pursuit Node Initialized");
@@ -134,7 +134,7 @@ public:
         const auto goal_way_point_index = f110::get_best_track_point_index(transformed_way_points, lookahead_distance_, last_best_index_);
 
         geometry_msgs::msg::TransformStamped map_to_base_link;
-        map_to_base_link = tf_buffer_->lookupTransform("ego_racecar/base_link", "map", tf2::TimePointZero);
+        map_to_base_link = tf_buffer_->lookupTransform("map", "base_link", tf2::TimePointZero);
 
 	geometry_msgs::msg::PoseStamped goal_way_point;
         goal_way_point.pose.position.x = way_point_data_[goal_way_point_index].x;
@@ -153,46 +153,46 @@ public:
         const double steering_angle = 2*(goal_way_point.pose.position.y)/(lookahead_distance_*lookahead_distance_);
 
         // Publish drive message
-        ackermann_msgs::msg::AckermannDriveStamped drive_msg;
+        geometry_msgs::msg::TwistStamped drive_msg;
         drive_msg.header.stamp = this->get_clock()->now();
         drive_msg.header.frame_id = "base_link";
 
         // Thresholding for limiting the movement of car wheels to avoid servo locking and variable speed
         // adjustment
-        drive_msg.drive.steering_angle = steering_angle;
+        drive_msg.twist.angular.z = steering_angle;
         if(steering_angle > 0.1)
         {
             if (steering_angle > 0.2)
             {
-                drive_msg.drive.speed = low_speed_;
+                drive_msg.twist.linear.x = low_speed_;
                 if (steering_angle > 0.4)
                 {
-                    drive_msg.drive.steering_angle = 0.4;
+                    drive_msg.twist.angular.z = 0.4;
                 }
             }
             else
             {
-                drive_msg.drive.speed = medium_speed_;
+                drive_msg.twist.linear.x = medium_speed_;
             }
         }
         else if(steering_angle < -0.1)
         {
             if (steering_angle < -0.2)
             {
-                drive_msg.drive.speed = low_speed_;
+                drive_msg.twist.linear.x = low_speed_;
                 if (steering_angle < -0.4)
                 {
-                    drive_msg.drive.steering_angle = -0.4;
+                    drive_msg.twist.angular.z = -0.4;
                 }
             }
             else
             {
-                drive_msg.drive.speed = medium_speed_;
+                drive_msg.twist.linear.x = medium_speed_;
             }
         }
         else
         {
-            drive_msg.drive.speed = high_speed_;
+            drive_msg.twist.linear.x = high_speed_;
         }
         drive_pub_->publish(drive_msg);
     }
@@ -200,7 +200,7 @@ public:
 private:
 
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-    rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr drive_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr drive_pub_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr waypoint_viz_pub_;
 
     double lookahead_distance_;

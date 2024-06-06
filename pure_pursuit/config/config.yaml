@@ -7,6 +7,10 @@ pure_pursuit_node:
     # No. of Waypoints in the path
     n_way_points: 700
     # Speed of the car
-    high_speed: 6.0
-    medium_speed: 4.0
-    low_speed: 2.0
+    high_speed: 0.7
+    medium_speed: 0.5
+    low_speed: 0.2
+    #high_speed: 0.0
+    #medium_speed: 0.0
+    #low_speed: 0.0
+

@@ -30,6 +30,7 @@ import range_libc
 import time
 from threading import Lock
 from particle_filter import utils as Utils
+from rclpy.qos import qos_profile_sensor_data, QoSProfile
 
 # TF
 # import tf.transformations
@@ -174,7 +175,7 @@ class ParticleFiler(Node):
             LaserScan,
             self.get_parameter('scan_topic').value,
             self.lidarCB,
-            1)
+            qos_profile=qos_profile_sensor_data)
         self.odom_sub = self.create_subscription(
             Odometry,
             self.get_parameter('odometry_topic').value,
@@ -244,7 +245,7 @@ class ParticleFiler(Node):
         # header
         t.header.stamp = stamp
         t.header.frame_id = '/map'
-        t.child_frame_id = '/laser'
+        t.child_frame_id = '/laser_frame'
         # translation
         t.transform.translation.x = pose[0]
         t.transform.translation.y = pose[1]

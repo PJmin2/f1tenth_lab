@@ -15,7 +15,7 @@ std::vector<WayPoint> transform(const std::vector<WayPoint>& reference_way_point
         const std::shared_ptr<tf2_ros::Buffer>& tfBuffer, const std::shared_ptr<tf2_ros::TransformListener>& tf2_listener)
 {
     geometry_msgs::msg::TransformStamped map_to_base_link;
-    map_to_base_link = tfBuffer->lookupTransform("ego_racecar/base_link", "map", tf2::TimePointZero);
+    map_to_base_link = tfBuffer->lookupTransform("map", "base_link", tf2::TimePointZero);
 
     std::vector<WayPoint> transformed_way_points;
     for(const auto& reference_way_point: reference_way_points)

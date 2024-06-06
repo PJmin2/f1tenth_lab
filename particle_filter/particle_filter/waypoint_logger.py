@@ -13,7 +13,7 @@ class WaypointLogger(Node):
     def __init__(self):
         super().__init__('waypoint_logger')
 
-        self.subscription = self.create_subscription(Odometry, '/ego_racecar/odom', self.save_waypoint, 10)
+        self.subscription = self.create_subscription(Odometry, '/odom', self.save_waypoint, 10)
 
 
     def save_waypoint(self, data: Odometry):
