@@ -1,6 +1,3 @@
-//
-// Created by yash on 10/20/19.
-//
 #pragma once
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -11,7 +8,7 @@
 namespace f110
 {
 
-std::vector<WayPoint> transform(const std::vector<WayPoint>& reference_way_points, const WayPoint& current_way_point,
+/*std::vector<WayPoint> transform(const std::vector<WayPoint>& reference_way_points, const WayPoint& current_way_point,
         const std::shared_ptr<tf2_ros::Buffer>& tfBuffer, const std::shared_ptr<tf2_ros::TransformListener>& tf2_listener)
 {
     geometry_msgs::msg::TransformStamped map_to_base_link;
@@ -35,9 +32,9 @@ std::vector<WayPoint> transform(const std::vector<WayPoint>& reference_way_point
     }
     return transformed_way_points;
 }
+*/
 
-
-size_t get_best_track_point_index(const std::vector<WayPoint>& way_point_data, double lookahead_distance, size_t& last_best_index)
+size_t get_best_track_point_index(const std::vector<f110::WayPoint> way_point_data, const WayPoint& current_way_point, double lookahead_distance, size_t& last_best_index)
 {
     double closest_distance = std::numeric_limits<double>::max();
     const size_t way_point_size = way_point_data.size();
@@ -45,8 +42,9 @@ size_t get_best_track_point_index(const std::vector<WayPoint>& way_point_data, d
     auto update_best_index_within_interval = [&](const size_t start_index, const size_t end_index){
         for(size_t i=start_index; i <end_index; ++i)
         {
-            if(way_point_data[i].x < 0) continue;
-            double distance = sqrt(way_point_data[i].x*way_point_data[i].x + way_point_data[i].y*way_point_data[i].y);
+	    double x_diff = way_point_data[i].x - current_way_point.x;
+	    double y_diff = way_point_data[i].y - current_way_point.y;
+            double distance = sqrt(x_diff*x_diff + y_diff*y_diff);
             double lookahead_diff = std::abs(distance - lookahead_distance);
             if(lookahead_diff < closest_distance)
             {

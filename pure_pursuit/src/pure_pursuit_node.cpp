@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
+#include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 
@@ -25,23 +25,20 @@ public:
     PurePursuit() : Node("pure_pursuit_node")
     {
         pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(pose_topic, 5, std::bind(&PurePursuit::pose_callback, this, std::placeholders::_1));
-        drive_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(drive_topic, 1);
+        drive_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(drive_topic, 1);
         waypoint_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(waypoint_viz_topic, queue_size);
 
-        this->declare_parameter("lookahead_distance");
-        this->declare_parameter("high_speed", 6.0);
-        this->declare_parameter("medium_speed", 4.0);
-        this->declare_parameter("low_speed", 2.0);
-        this->declare_parameter("n_way_points", 500);
+        this->declare_parameter("lookahead_distance", 1.5);
+        this->declare_parameter("high_speed", 1.0);
+        this->declare_parameter("medium_speed", 0.8);
+        this->declare_parameter("low_speed", 0.6);
+        this->declare_parameter("n_way_points", 700);
 
         this->get_parameter("lookahead_distance", lookahead_distance_);
         this->get_parameter("high_speed", high_speed_);
         this->get_parameter("medium_speed", medium_speed_);
         this->get_parameter("low_speed", low_speed_);
         this->get_parameter("n_way_points", n_way_points_);
-
-	tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-	tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
 	f110::CSVReader reader("/home/min/colcon_ws/src/pure_pursuit/sensor_data/waypoint.csv");
         RCLCPP_INFO(this->get_logger(), "%d", n_way_points_);
@@ -122,19 +119,12 @@ public:
 
     void pose_callback(const geometry_msgs::msg::PoseStamped::ConstPtr pose_msg)
     {
-        RCLCPP_INFO(this->get_logger(), "last_best_index_ = %d", last_best_index_);
+        //RCLCPP_INFO(this->get_logger(), "last_best_index_ = %d", last_best_index_);
 
-        // Convert pose_msg to WayPoint
-        const auto current_way_point = f110::WayPoint(pose_msg);
-
-        // Transform Points
-        const auto transformed_way_points = transform(way_point_data_, current_way_point, tf_buffer_, tf_listener_);
+	const auto current_way_point = f110::WayPoint(pose_msg);
 
         // Find the best waypoint to track (at lookahead distance)
-        const auto goal_way_point_index = f110::get_best_track_point_index(transformed_way_points, lookahead_distance_, last_best_index_);
-
-        geometry_msgs::msg::TransformStamped map_to_base_link;
-        map_to_base_link = tf_buffer_->lookupTransform("map", "base_link", tf2::TimePointZero);
+        const auto goal_way_point_index = f110::get_best_track_point_index(way_point_data_, current_way_point, lookahead_distance_, last_best_index_);
 
 	geometry_msgs::msg::PoseStamped goal_way_point;
         goal_way_point.pose.position.x = way_point_data_[goal_way_point_index].x;
@@ -147,52 +137,52 @@ public:
 
         add_way_point_visualization(goal_way_point, "map", 0.0, 0.0, 1.0, 1.0, 0.2, 0.2, 0.2);
 
-        tf2::doTransform(goal_way_point, goal_way_point, map_to_base_link);
-
         // Calculate curvature/steering angle
-        const double steering_angle = 2*(goal_way_point.pose.position.y)/(lookahead_distance_*lookahead_distance_);
+        const double steering_angle = 2*(goal_way_point.pose.position.y - current_way_point.y)/(lookahead_distance_*lookahead_distance_);
+        RCLCPP_INFO(this->get_logger(), "x = %lf, y = %lf", goal_way_point.pose.position.x,  goal_way_point.pose.position.y);
+        RCLCPP_INFO(this->get_logger(), "steering_angle = %lf", steering_angle);
 
         // Publish drive message
-        geometry_msgs::msg::TwistStamped drive_msg;
-        drive_msg.header.stamp = this->get_clock()->now();
-        drive_msg.header.frame_id = "base_link";
+        geometry_msgs::msg::Twist drive_msg;
 
         // Thresholding for limiting the movement of car wheels to avoid servo locking and variable speed
         // adjustment
-        drive_msg.twist.angular.z = steering_angle;
+        drive_msg.angular.z = steering_angle;
         if(steering_angle > 0.1)
         {
             if (steering_angle > 0.2)
             {
-                drive_msg.twist.linear.x = low_speed_;
+                drive_msg.linear.x = low_speed_;
                 if (steering_angle > 0.4)
                 {
-                    drive_msg.twist.angular.z = 0.4;
+                    drive_msg.angular.z = 0.4;
+		    drive_msg.linear.x = 0.4;
                 }
             }
             else
             {
-                drive_msg.twist.linear.x = medium_speed_;
+                drive_msg.linear.x = medium_speed_;
             }
         }
         else if(steering_angle < -0.1)
         {
             if (steering_angle < -0.2)
             {
-                drive_msg.twist.linear.x = low_speed_;
+                drive_msg.linear.x = low_speed_;
                 if (steering_angle < -0.4)
                 {
-                    drive_msg.twist.angular.z = -0.4;
+                    drive_msg.angular.z = -0.4;
+		    drive_msg.linear.x = 0.4;
                 }
             }
             else
             {
-                drive_msg.twist.linear.x = medium_speed_;
+                drive_msg.linear.x = medium_speed_;
             }
         }
         else
         {
-            drive_msg.twist.linear.x = high_speed_;
+            drive_msg.linear.x = high_speed_;
         }
         drive_pub_->publish(drive_msg);
     }
@@ -200,7 +190,7 @@ public:
 private:
 
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr drive_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr drive_pub_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr waypoint_viz_pub_;
 
     double lookahead_distance_;
@@ -215,9 +205,6 @@ private:
     size_t queue_size = 100;
     size_t unique_marker_id_ = 0;
     size_t last_best_index_ = 0;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
-    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-
 };
 
 

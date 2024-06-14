@@ -1,0 +1,466 @@
+<?xml version="1.0" ?>
+<robot name="stella" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Init colour -->
+  <material name="black">
+      <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="dark">
+    <color rgba="0.3 0.3 0.3 1.0"/>
+  </material>
+
+  <material name="light_black">
+    <color rgba="0.4 0.4 0.4 1.0"/>
+  </material>
+
+  <material name="blue">
+    <color rgba="0.2 0.2 0.8 1.0"/>
+  </material>
+
+  <material name="green">
+    <color rgba="0.0 0.8 0.0 1.0"/>
+  </material>
+
+  <material name="grey">
+    <color rgba="0.5 0.5 0.5 1.0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="1.0 0.4235 0.0392 1.0"/>
+  </material>
+
+  <material name="brown">
+    <color rgba="0.8706 0.8118 0.7647 1.0"/>
+  </material>
+
+  <material name="red">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+  <link name="base_footprint"/>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link" />
+    <origin xyz="0.0 0.0 0.0669" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0.01 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/bases/stella_body.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="light_black"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.01 0.0 0.0685" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.44 0.38 0.1371"/>
+      </geometry>
+    </collision>
+    
+    <inertial>
+      <origin xyz="-0.1 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="5.311"/>
+      <inertia ixx="0.07221587992" ixy="0.0" ixz="0.0"
+               iyy="0.09399097992" iyz="0.0"
+               izz="0.14959316667" />
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0.0 0.0 0.001" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="imu_link"/>
+
+  <joint name="scan_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_scan"/>
+    <origin xyz="0.145 0.0 0.178" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="base_scan">
+    <visual>
+      <origin xyz="-0.06775 -0.0355 -0.0415" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/bases/ydlidar_x4.STL" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="-0.06775 -0.0355 -0.0415" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder length="0.0315" radius="0.055"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="-0.06775 -0.0355 -0.0415" rpy="0.0 0.0 0.0"/>
+      <mass value="0.189" />
+      <inertia ixx="0.00015856" ixy="0.0" ixz="0.0"
+               iyy="0.00015856" iyz="0.0"
+               izz="0.00028586"/>
+    </inertial>
+  </link>
+
+  <joint name="caster_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="caster_link"/>
+    <origin xyz="-0.1566 0.0 0.0" rpy="0.0 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <link name="caster_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.002" rpy="0.0 0.0 3.1416"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/bases/STELLA_N1_caster.stl" scale="0.00106 0.00106 0.00106"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.002" rpy="0.0 0.0 1.5708"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/bases/STELLA_N1_caster.stl" scale="0.00106 0.00106 0.00106"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 4.7134"/>
+      <mass value="0.01" />
+      <inertia ixx="3.083333e-06" ixy="0.0" ixz="0.0"
+               iyy="3.083333e-06" iyz="0.0"
+               izz="2.000000e-06"/>
+    </inertial>
+  </link>
+
+  <joint name="caster_wheel_joint" type="continuous">
+    <parent link="caster_link"/>
+    <child link="caster_wheel_link"/>
+    <origin xyz="-0.02385 0.0 -0.0452" rpy="1.5708 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <link name="caster_wheel_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder length="0.02" radius="0.0215"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder length="0.02" radius="0.0215"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.01" />
+      <inertia ixx="1.4889583e-06" ixy="0.0" ixz="0.0"
+               iyy="1.4889583e-06" iyz="0.0"
+               izz="2.3112499e-06"/>
+    </inertial>
+    
+  </link>
+
+  <joint name="wheel_l_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_l_link"/>
+    <origin xyz="0.098 0.12 0.0235" rpy="-1.5708 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <link name="wheel_l_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/bases/STELLA_N1_wheel.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0307" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder length="0.0615" radius="0.09"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.84" />
+      <inertia ixx="0.00184275" ixy="0.0" ixz="0.0"
+               iyy="0.00184275" iyz="0.0"
+               izz="0.003402"/>
+    </inertial>
+  </link>
+
+  <joint name="wheel_r_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel_r_link"/>
+    <origin xyz="0.098 -0.12 0.0235" rpy="-1.5708 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10000" velocity="1000"/>
+    <joint_properties damping="1.0" friction="1.0"/>
+  </joint>
+
+  <link name="wheel_r_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="3.1415 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://stella_description/meshes/bases/STELLA_N1_wheel.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="dark"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 -0.0307" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder length="0.0615" radius="0.09"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="3.1415 0.0 0.0"/>
+      <mass value="0.84" />
+      <inertia ixx="0.00184275" ixy="0.0" ixz="0.0"
+               iyy="0.00184275" iyz="0.0"
+               izz="0.003402"/>
+    </inertial>
+  </link>
+
+  <joint name="cam_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="cam_link"/>
+    <origin xyz="0.21 0.0 0.025" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="cam_link"/>
+
+  <gazebo reference="base_link">
+    <material>Gazebo/DarkGrey</material>
+  </gazebo>
+
+  <gazebo reference="imu_link">
+    <gravity>true</gravity>
+    <sensor type="imu" name="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <imu>
+        <angular_velocity>
+          <x>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>2e-4</stddev>
+            </noise>
+          </x>
+          <y>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>2e-4</stddev>
+            </noise>
+          </y>
+          <z>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>2e-4</stddev>
+            </noise>
+          </z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>1.7e-2</stddev>
+            </noise>
+          </x>
+          <y>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>1.7e-2</stddev>
+            </noise>
+          </y>
+          <z>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>1.7e-2</stddev>
+            </noise>
+          </z>
+        </linear_acceleration>
+      </imu>
+      <plugin name="AHRS" filename="libgazebo_ros_imu_sensor.so">
+        <ros>
+          <namespace>imu</namespace>
+          <remapping>~/out:=data</remapping>
+        </ros>
+        <initial_orientation_as_reference>false</initial_orientation_as_reference>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="cam_link">
+    <sensor name="cam" type="camera">
+      <update_rate>10</update_rate>
+      <always_on>1</always_on>
+      <camera name="camera">
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+          <width>1920</width>
+          <height>1080</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.01</near>
+          <far>20</far>
+        </clip>
+        <distortion>
+          <k1>0.0</k1>
+          <k2>0.0</k2>
+          <k3>0.0</k3>
+          <p1>0.0</p1>
+          <p2>0.0</p2>
+          <center>0.5 0.5</center>
+        </distortion>
+      </camera>
+      <plugin filename="libgazebo_ros_camera.so" name="cam_controller">
+        <ros>
+          <remapping>~/image_raw:=image_raw</remapping>
+          <remapping>~/camera_info:=camera_info</remapping>
+        </ros>
+        <camera_name>camera</camera_name>
+        <frame_name>cam_link</frame_name>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="base_scan">
+    <material>Gazebo/FlatBlack</material>
+    <sensor type="ray" name="ydlidar">
+      <pose>0 0 0 0 0 0</pose>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>2.0</resolution>
+            <min_angle>-3.141592</min_angle>
+            <max_angle>3.141592</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.12</min>
+          <max>10.0</max>
+          <resolution>0.015</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+      <update_rate>5</update_rate>
+      <plugin name="ydlidar" filename="libgazebo_ros_ray_sensor.so">
+        <ros>
+          <remapping>~/out:=scan</remapping>
+        </ros>
+        <output_type>sensor_msgs/LaserScan</output_type>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="caster_link">
+    <kp>500000.0</kp>
+    <kd>50.0</kd>
+    <mu1>0.1</mu1>
+    <mu2>0.1</mu2>
+    <material>Gazebo/FlatBlack</material>
+  </gazebo>
+
+  <gazebo reference="caster_wheel_link">
+    <kp>500000.0</kp>
+    <kd>50.0</kd>
+    <mu1>0.1</mu1>
+    <mu2>0.1</mu2>
+    <material>Gazebo/FlatBlack</material>
+  </gazebo>
+
+  <gazebo reference="wheel_l_link">
+    <kp>500000.0</kp>
+    <kd>50.0</kd>
+    <mu1>5.0</mu1>
+    <mu2>5.0</mu2>
+    <material>Gazebo/FlatBlack</material>
+  </gazebo>
+
+  <gazebo reference="wheel_r_link">
+    <kp>500000.0</kp>
+    <kd>50.0</kd>
+    <mu1>5.0</mu1>
+    <mu2>5.0</mu2>
+    <material>Gazebo/FlatBlack</material>
+  </gazebo>
+
+  <!-- joint publisher -->
+  <gazebo>
+    <plugin name="stella_joint_state" filename="libgazebo_ros_joint_state_publisher.so">
+      <ros>
+        <remapping>~/out:=joint_states</remapping>
+      </ros>
+      <update_rate>30</update_rate>
+
+      <joint_name>caster_joint</joint_name>
+      <joint_name>caster_wheel_joint</joint_name>
+      <joint_name>wheel_l_joint</joint_name>
+      <joint_name>wheel_r_joint</joint_name>
+    </plugin>
+  </gazebo>
+
+  <!-- differential drive -->
+  <gazebo>
+    <plugin name="stella_joint_controller" filename="libgazebo_ros_diff_drive.so">
+      <update_rate>30</update_rate>
+      <!-- wheel -->
+      <left_joint>wheel_l_joint</left_joint>
+      <right_joint>wheel_r_joint</right_joint>
+      <!-- kinematics -->
+      <wheel_separation>0.337</wheel_separation>
+      <wheel_diameter>0.18</wheel_diameter>
+      <!-- limits -->
+      <max_wheel_torque>13.5</max_wheel_torque>
+      <max_wheel_acceleration>10.43</max_wheel_acceleration>
+      <!-- output -->
+      <publish_odom>false</publish_odom>
+      <publish_odom_tf>false</publish_odom_tf>
+      <publish_wheel_tf>false</publish_wheel_tf>
+
+      <odometry_frame>odom</odometry_frame>
+      <odometry_topic>odom</odometry_topic>
+      <robot_base_frame>base_footprint</robot_base_frame>
+    </plugin>
+  </gazebo>
+    
+
+</robot>

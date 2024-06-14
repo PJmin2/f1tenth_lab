@@ -38,6 +38,8 @@ from rclpy.qos import qos_profile_sensor_data, QoSProfile
 from tf2_ros import TransformBroadcaster
 import tf_transformations
 
+from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
+
 # messages
 from std_msgs.msg import String, Header, Float32MultiArray
 from sensor_msgs.msg import LaserScan
@@ -169,6 +171,10 @@ class ParticleFiler(Node):
 
         # these topics are for coordinate space things
         self.pub_tf = TransformBroadcaster(self)
+        self.tf_static_broadcaster = StaticTransformBroadcaster(self)
+
+        # Publish static transforms once at startup
+        self.make_transforms()
 
         # these topics are to receive data from the racecar
         self.laser_sub = self.create_subscription(
@@ -236,6 +242,24 @@ class ParticleFiler(Node):
         self.permissible_region[array_255==0] = 1
         self.map_initialized = True
 
+    def make_transforms(self):
+        t = TransformStamped()
+
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = 'map'
+        t.child_frame_id = 'odom'
+
+        t.transform.translation.x = 0.0
+        t.transform.translation.y = 0.0
+        t.transform.translation.z = 0.0
+        q = tf_transformations.quaternion_from_euler(0., 0., -0.1)
+        t.transform.rotation.x = q[0]
+        t.transform.rotation.y = q[1]
+        t.transform.rotation.z = q[2]
+        t.transform.rotation.w = q[3]
+
+        self.tf_static_broadcaster.sendTransform(t)
+
     def publish_tf(self, pose, stamp=None):
         ''' Publish a tf for the car. This tells ROS where the car is with respect to the map. '''
         if stamp == None:
@@ -245,12 +269,14 @@ class ParticleFiler(Node):
         # header
         t.header.stamp = stamp
         t.header.frame_id = '/map'
-        t.child_frame_id = '/laser_frame'
+        t.child_frame_id = '/laser'
         # translation
         t.transform.translation.x = pose[0]
         t.transform.translation.y = pose[1]
         t.transform.translation.z = 0.0
         q = tf_transformations.quaternion_from_euler(0., 0., pose[2])
+        # q = tf_transformations.quaternion_from_euler(0., 0., -1.5707)
+
         # rotation
         t.transform.rotation.x = q[0]
         t.transform.rotation.y = q[1]
@@ -411,7 +437,7 @@ class ParticleFiler(Node):
         permissible_states[:,1] = np.random.normal(loc=0.0,scale=0.5,size=self.MAX_PARTICLES)
         permissible_states[:,2] = np.random.normal(loc=0.0,scale=0.4,size=self.MAX_PARTICLES)
 
-        Utils.map_to_world(permissible_states, self.map_info)
+        # Utils.map_to_world(permissible_states, self.map_info)
         self.particles = permissible_states
         self.weights[:] = 1.0 / self.MAX_PARTICLES
         self.state_lock.release()
