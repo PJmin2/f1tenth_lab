@@ -252,7 +252,7 @@ class ParticleFiler(Node):
         t.transform.translation.x = 0.0
         t.transform.translation.y = 0.0
         t.transform.translation.z = 0.0
-        q = tf_transformations.quaternion_from_euler(0., 0., -0.1)
+        q = tf_transformations.quaternion_from_euler(0., 0., 0.)
         t.transform.rotation.x = q[0]
         t.transform.rotation.y = q[1]
         t.transform.rotation.z = q[2]

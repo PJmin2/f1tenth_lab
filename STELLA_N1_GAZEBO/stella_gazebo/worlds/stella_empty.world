@@ -11,8 +11,7 @@
         </include>
 	<include>
 	    <pose>-20.8 18.0 0 0 0 0 </pose>
-	    <scale>0.5 0.5 1.0 </scale>
-	     <uri>model://map</uri>
+	    <uri>model://map</uri>
 	</include>
 
     </world>

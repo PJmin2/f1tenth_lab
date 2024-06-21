@@ -28,19 +28,25 @@ public:
         drive_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(drive_topic, 1);
         waypoint_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(waypoint_viz_topic, queue_size);
 
-        this->declare_parameter("lookahead_distance", 1.5);
-        this->declare_parameter("high_speed", 1.0);
-        this->declare_parameter("medium_speed", 0.8);
-        this->declare_parameter("low_speed", 0.6);
-        this->declare_parameter("n_way_points", 700);
+        this->declare_parameter("lookahead_distance");
+        this->declare_parameter("high_speed");
+        this->declare_parameter("medium_speed");
+        this->declare_parameter("low_speed");
+        this->declare_parameter("n_way_points");
+        this->declare_parameter("kp");
+        this->declare_parameter("ki");
+        this->declare_parameter("kd");
 
         this->get_parameter("lookahead_distance", lookahead_distance_);
         this->get_parameter("high_speed", high_speed_);
         this->get_parameter("medium_speed", medium_speed_);
         this->get_parameter("low_speed", low_speed_);
         this->get_parameter("n_way_points", n_way_points_);
+        this->get_parameter("kp", kp_);
+	this->get_parameter("ki", ki_);
+        this->get_parameter("kd", kd_);
 
-	f110::CSVReader reader("/home/min/colcon_ws/src/pure_pursuit/sensor_data/waypoint.csv");
+	f110::CSVReader reader("/home/min/colcon_ws/src/pure_pursuit/sensor_data/waypoint_gazebo.csv");
         RCLCPP_INFO(this->get_logger(), "%d", n_way_points_);
 	way_point_data_ = reader.getData(n_way_points_);
         RCLCPP_INFO(this->get_logger(), "Pure Pursuit Node Initialized");
@@ -117,6 +123,52 @@ public:
         if (visualized_) {waypoint_viz_pub_->publish(way_point_marker);}
     }
 
+    float get_velocity(float angle)
+    {
+
+        if (angle < M_PI/18)
+        {
+            return high_speed_;
+        }
+
+        if (angle < M_PI/9)
+        {
+            return medium_speed_;
+        }
+
+        return low_speed_;
+
+    }
+
+    void pid_control(float error)
+    {
+
+        double angle = 0.0;
+
+        rclcpp::Time previous_reading_time = current_reading_time;
+        current_reading_time = this->get_clock()->now();
+
+        double dt = (current_reading_time - previous_reading_time).seconds();
+        //RCLCPP_INFO(this->get_logger(), "dt = %lf", dt);
+        double integral = prev_error * dt;
+        double derivative = (error - prev_error) / dt;
+
+        angle = kp_ * error + ki_ * integral + kd_ * derivative;
+        RCLCPP_INFO(this->get_logger(), "angle = %lf", angle);
+        prev_error = error;
+
+        if (abs(error) < 0.1)
+        {
+            angle = 0.0;
+        }
+
+        float velocity = get_velocity(abs(angle));
+
+        drive_msg.linear.x = velocity;
+        drive_msg.angular.z = angle;
+        drive_pub_->publish(drive_msg);
+    }
+
     void pose_callback(const geometry_msgs::msg::PoseStamped::ConstPtr pose_msg)
     {
         //RCLCPP_INFO(this->get_logger(), "last_best_index_ = %d", last_best_index_);
@@ -137,54 +189,12 @@ public:
 
         add_way_point_visualization(goal_way_point, "map", 0.0, 0.0, 1.0, 1.0, 0.2, 0.2, 0.2);
 
+	double alpha = atan2((goal_way_point.pose.position.y - current_way_point.y), (goal_way_point.pose.position.x - current_way_point.x)) - current_way_point.heading;
         // Calculate curvature/steering angle
-        const double steering_angle = 2*(goal_way_point.pose.position.y - current_way_point.y)/(lookahead_distance_*lookahead_distance_);
-        RCLCPP_INFO(this->get_logger(), "x = %lf, y = %lf", goal_way_point.pose.position.x,  goal_way_point.pose.position.y);
-        RCLCPP_INFO(this->get_logger(), "steering_angle = %lf", steering_angle);
+        RCLCPP_INFO(this->get_logger(), "yaw = %lf", current_way_point.heading * (180/3.14159));
+        //RCLCPP_INFO(this->get_logger(), "steering_angle = %lf", steering_angle);
 
-        // Publish drive message
-        geometry_msgs::msg::Twist drive_msg;
-
-        // Thresholding for limiting the movement of car wheels to avoid servo locking and variable speed
-        // adjustment
-        drive_msg.angular.z = steering_angle;
-        if(steering_angle > 0.1)
-        {
-            if (steering_angle > 0.2)
-            {
-                drive_msg.linear.x = low_speed_;
-                if (steering_angle > 0.4)
-                {
-                    drive_msg.angular.z = 0.4;
-		    drive_msg.linear.x = 0.4;
-                }
-            }
-            else
-            {
-                drive_msg.linear.x = medium_speed_;
-            }
-        }
-        else if(steering_angle < -0.1)
-        {
-            if (steering_angle < -0.2)
-            {
-                drive_msg.linear.x = low_speed_;
-                if (steering_angle < -0.4)
-                {
-                    drive_msg.angular.z = -0.4;
-		    drive_msg.linear.x = 0.4;
-                }
-            }
-            else
-            {
-                drive_msg.linear.x = medium_speed_;
-            }
-        }
-        else
-        {
-            drive_msg.linear.x = high_speed_;
-        }
-        drive_pub_->publish(drive_msg);
+        pid_control(alpha);
     }
 
 private:
@@ -193,10 +203,22 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr drive_pub_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr waypoint_viz_pub_;
 
+    // Publish drive message
+    geometry_msgs::msg::Twist drive_msg;
+
     double lookahead_distance_;
     double high_speed_;
     double medium_speed_;
     double low_speed_;
+    double kp_;
+    double ki_;
+    double kd_;
+
+    double prev_error = 0.0;
+    double error = 0.0;
+
+    rclcpp::Time current_reading_time = this->get_clock()->now();
+
     int n_way_points_;
 
     std::vector<f110::WayPoint> way_point_data_;
