@@ -189,12 +189,21 @@ public:
 
         add_way_point_visualization(goal_way_point, "map", 0.0, 0.0, 1.0, 1.0, 0.2, 0.2, 0.2);
 
-	double alpha = atan2((goal_way_point.pose.position.y - current_way_point.y), (goal_way_point.pose.position.x - current_way_point.x)) - current_way_point.heading;
-        // Calculate curvature/steering angle
-        RCLCPP_INFO(this->get_logger(), "yaw = %lf", current_way_point.heading * (180/3.14159));
-        //RCLCPP_INFO(this->get_logger(), "steering_angle = %lf", steering_angle);
+	double x_diff = goal_way_point.pose.position.x - current_way_point.x;
+	double y_diff = goal_way_point.pose.position.y - current_way_point.y;
+        double yaw = current_way_point.heading;
 
-        pid_control(alpha);
+	double rotation_x_diff = x_diff*cos(yaw) + y_diff*sin(yaw);
+	double rotation_y_diff = x_diff*sin(yaw) - y_diff*cos(yaw);
+
+        double steering_angle = -atan2(rotation_y_diff, rotation_x_diff);
+
+        // Calculate curvature/steering angle
+        RCLCPP_INFO(this->get_logger(), "steering_angle = %lf, yaw = %lf", steering_angle, yaw * (180/3.14159));
+        RCLCPP_INFO(this->get_logger(), "atan2( %lf, %lf ) = %lf", rotation_y_diff, rotation_x_diff, steering_angle);
+        RCLCPP_INFO(this->get_logger(), "goal_way_point.x =  %lf, current_way_point.x = %lf", goal_way_point.pose.position.x, current_way_point.x);
+
+        pid_control(steering_angle);
     }
 
 private:
