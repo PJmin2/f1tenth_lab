@@ -5,7 +5,7 @@ particle_filter:
     odometry_topic: '/odom'
     odom_x: 0.0
     odom_y: 0.0
-    odom_angle: 0.0
+    odom_angle: -1.0
     # range data downsampling
     #angle_step: 18
     angle_step: 7
@@ -37,4 +37,4 @@ particle_filter:
 map_server:
   ros__parameters:
     # assuming map file is in particle_filter/maps
-    map: 'it2_gazebo'
+    map: 'map626'

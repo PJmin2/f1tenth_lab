@@ -46,7 +46,7 @@ public:
 	this->get_parameter("ki", ki_);
         this->get_parameter("kd", kd_);
 
-	f110::CSVReader reader("/home/min/colcon_ws/src/pure_pursuit/sensor_data/waypoint_gazebo.csv");
+	f110::CSVReader reader("/home/min/colcon_ws/src/pure_pursuit/sensor_data/waypoint_626.csv");
         RCLCPP_INFO(this->get_logger(), "%d", n_way_points_);
 	way_point_data_ = reader.getData(n_way_points_);
         RCLCPP_INFO(this->get_logger(), "Pure Pursuit Node Initialized");
@@ -175,9 +175,12 @@ public:
 
 	const auto current_way_point = f110::WayPoint(pose_msg);
 
+        if (last_best_index_ == 0) {first_yaw_ = current_way_point.heading;}
+        RCLCPP_INFO(this->get_logger(), "first_yaw = %lf", first_yaw_);
+
         // Find the best waypoint to track (at lookahead distance)
         const auto goal_way_point_index = f110::get_best_track_point_index(way_point_data_, current_way_point, lookahead_distance_, last_best_index_);
-        RCLCPP_INFO(this->get_logger(), "goal_way_point_index =  %d", goal_way_point_index);
+        RCLCPP_INFO(this->get_logger(), "goal_way_point_index = %d", goal_way_point_index);
 
 	geometry_msgs::msg::PoseStamped goal_way_point;
         goal_way_point.pose.position.x = way_point_data_[goal_way_point_index].x;
@@ -192,7 +195,9 @@ public:
 
 	double x_diff = goal_way_point.pose.position.x - current_way_point.x;
 	double y_diff = goal_way_point.pose.position.y - current_way_point.y;
-        double yaw = current_way_point.heading;
+
+        //double yaw = atan2(sin(current_way_point.heading - first_yaw_), cos(current_way_point.heading - first_yaw_));
+	double yaw = current_way_point.heading;
 
 	double rotation_x_diff = x_diff*cos(yaw) + y_diff*sin(yaw);
 	double rotation_y_diff = x_diff*sin(yaw) - y_diff*cos(yaw);
@@ -200,9 +205,10 @@ public:
         double steering_angle = -atan2(rotation_y_diff, rotation_x_diff);
 
         // Calculate curvature/steering angle
-        //RCLCPP_INFO(this->get_logger(), "steering_angle = %lf, yaw = %lf", steering_angle, yaw * (180/3.14159));
-        //RCLCPP_INFO(this->get_logger(), "atan2( %lf, %lf ) = %lf", rotation_y_diff, rotation_x_diff, steering_angle);
-        //RCLCPP_INFO(this->get_logger(), "goal_way_point.x =  %lf, current_way_point.x = %lf", goal_way_point.pose.position.x, current_way_point.x);
+        RCLCPP_INFO(this->get_logger(), "steering_angle = %lf, yaw = %lf", steering_angle, yaw * (180/3.14159));
+        RCLCPP_INFO(this->get_logger(), "atan2( %lf, %lf ) = %lf", rotation_y_diff, rotation_x_diff, steering_angle);
+        RCLCPP_INFO(this->get_logger(), "goal_way_point.x =  %lf, current_way_point.x = %lf", goal_way_point.pose.position.x, current_way_point.x);
+        RCLCPP_INFO(this->get_logger(), "goal_way_point.y =  %lf, current_way_point.y = %lf", goal_way_point.pose.position.y, current_way_point.y);
 
         pid_control(steering_angle);
     }
@@ -223,6 +229,8 @@ private:
     double kp_;
     double ki_;
     double kd_;
+
+    double first_yaw_ = 0.0;
 
     double prev_error = 0.0;
     double error = 0.0;
