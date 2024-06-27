@@ -3,6 +3,9 @@ particle_filter:
     # topic names
     scan_topic: '/scan'
     odometry_topic: '/odom'
+    odom_x: 0.0
+    odom_y: 0.0
+    odom_angle: 0.0
     # range data downsampling
     #angle_step: 18
     angle_step: 7

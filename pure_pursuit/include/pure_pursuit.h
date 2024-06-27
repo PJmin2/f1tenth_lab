@@ -56,7 +56,7 @@ size_t get_best_track_point_index(const std::vector<f110::WayPoint> way_point_da
 
     if(last_best_index > way_point_size - way_point_size/10)
     {
-        update_best_index_within_interval(way_point_size - way_point_size/10, way_point_size);
+        update_best_index_within_interval(last_best_index, way_point_size);
         update_best_index_within_interval(0, 100);
     }
     else

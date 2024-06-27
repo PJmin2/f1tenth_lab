@@ -67,6 +67,9 @@ class ParticleFiler(Node):
         super().__init__('particle_filter')
 
         # declare parameters
+        self.declare_parameter('odom_x')
+        self.declare_parameter('odom_y')
+        self.declare_parameter('odom_angle')
         self.declare_parameter('angle_step')
         self.declare_parameter('max_particles')
         self.declare_parameter('max_viz_particles')
@@ -90,6 +93,9 @@ class ParticleFiler(Node):
         self.declare_parameter('odometry_topic')
 
         # parameters
+        self.ODOM_X               = self.get_parameter('odom_x').value
+        self.ODOM_Y               = self.get_parameter('odom_y').value
+        self.ODOM_ANGLE           = self.get_parameter('odom_angle').value
         self.ANGLE_STEP           = self.get_parameter('angle_step').value
         self.MAX_PARTICLES        = self.get_parameter('max_particles').value
         self.MAX_VIZ_PARTICLES    = self.get_parameter('max_viz_particles').value
@@ -252,7 +258,7 @@ class ParticleFiler(Node):
         t.transform.translation.x = 0.0
         t.transform.translation.y = 0.0
         t.transform.translation.z = 0.0
-        q = tf_transformations.quaternion_from_euler(0., 0., 0.)
+        q = tf_transformations.quaternion_from_euler(self.ODOM_X, self.ODOM_Y, self.ODOM_ANGLE)
         t.transform.rotation.x = q[0]
         t.transform.rotation.y = q[1]
         t.transform.rotation.z = q[2]

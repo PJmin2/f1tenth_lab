@@ -1,4 +1,4 @@
-image: levine.png
+image: /home/min/colcon_ws/src/f1tenth_gym_ros/maps/levine.png
 resolution: 0.050000
 origin: [-51.224998, -51.224998, 0.000000]
 negate: 0

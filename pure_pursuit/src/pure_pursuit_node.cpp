@@ -177,6 +177,7 @@ public:
 
         // Find the best waypoint to track (at lookahead distance)
         const auto goal_way_point_index = f110::get_best_track_point_index(way_point_data_, current_way_point, lookahead_distance_, last_best_index_);
+        RCLCPP_INFO(this->get_logger(), "goal_way_point_index =  %d", goal_way_point_index);
 
 	geometry_msgs::msg::PoseStamped goal_way_point;
         goal_way_point.pose.position.x = way_point_data_[goal_way_point_index].x;
@@ -199,9 +200,9 @@ public:
         double steering_angle = -atan2(rotation_y_diff, rotation_x_diff);
 
         // Calculate curvature/steering angle
-        RCLCPP_INFO(this->get_logger(), "steering_angle = %lf, yaw = %lf", steering_angle, yaw * (180/3.14159));
-        RCLCPP_INFO(this->get_logger(), "atan2( %lf, %lf ) = %lf", rotation_y_diff, rotation_x_diff, steering_angle);
-        RCLCPP_INFO(this->get_logger(), "goal_way_point.x =  %lf, current_way_point.x = %lf", goal_way_point.pose.position.x, current_way_point.x);
+        //RCLCPP_INFO(this->get_logger(), "steering_angle = %lf, yaw = %lf", steering_angle, yaw * (180/3.14159));
+        //RCLCPP_INFO(this->get_logger(), "atan2( %lf, %lf ) = %lf", rotation_y_diff, rotation_x_diff, steering_angle);
+        //RCLCPP_INFO(this->get_logger(), "goal_way_point.x =  %lf, current_way_point.x = %lf", goal_way_point.pose.position.x, current_way_point.x);
 
         pid_control(steering_angle);
     }
